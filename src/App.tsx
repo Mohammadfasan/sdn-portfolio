@@ -7,7 +7,7 @@ import SadanPdf from './assets/CV.pdf'
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
-const [isHovered, setIsHovered] = useState<number | null>(null);
+  const [isHovered, setIsHovered] = useState<number | null>(null);
 
   // Enhanced Animation Variants
   const containerVariants = {
@@ -131,6 +131,26 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
     }
   };
 
+  // Mobile menu animation variants
+  const mobileMenuVariants = {
+    closed: {
+      opacity: 0,
+      height: 0,
+      transition: {
+        duration: 0.3,
+        ease: "easeInOut"
+      }
+    },
+    open: {
+      opacity: 1,
+      height: "auto",
+      transition: {
+        duration: 0.3,
+        ease: "easeInOut"
+      }
+    }
+  };
+
   const projects = [
     {
       title: "Portable GHG Analyzer",
@@ -185,6 +205,32 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
     { id: 'contact', label: 'Contact' }
   ];
 
+  // Body scroll control for mobile menu
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMenuOpen]);
+
+  // Backdrop click to close menu
+  useEffect(() => {
+    const handleBackdropClick = (e: MouseEvent) => {
+      const target = e.target as Element;
+      if (isMenuOpen && !target.closest('.mobile-menu-container') && !target.closest('.mobile-menu-button')) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleBackdropClick);
+    return () => document.removeEventListener('click', handleBackdropClick);
+  }, [isMenuOpen]);
+
   useEffect(() => {
     const handleScroll = () => {
       const sections = navItems.map(item => document.getElementById(item.id));
@@ -207,11 +253,16 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
   }, []);
 
   const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
     setIsMenuOpen(false);
+    
+    setTimeout(() => {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        const yOffset = -80;
+        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    }, 50);
   };
 
   const downloadCV = () => {
@@ -222,49 +273,46 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
     link.click();
     document.body.removeChild(link);
   };
+  
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50">
-      {/* Enhanced Navigation Bar */}
+      {/* Fixed Navigation Bar */}
       <motion.nav 
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
         className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-md shadow-lg z-50 border-b border-emerald-100"
       >
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between h-16">
-            {/* Enhanced Logo */}
+            {/* Logo */}
             <motion.div 
-              whileHover={{ 
-                scale: 1.05,
-                rotateY: 180,
-                transition: { duration: 0.6 }
-              }}
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center space-x-3 cursor-pointer"
+              className="flex items-center space-x-3 cursor-pointer" 
+              onClick={() => scrollToSection('home')}
             >
-              <motion.div 
-                animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center"
-              >
+              <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
                 <Leaf size={24} className="text-white" />
-              </motion.div>
+              </div>
               <span className="text-xl font-bold text-gray-800">Saadhan Faizal</span>
             </motion.div>
 
-            {/* Enhanced Desktop Navigation */}
+            {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
-              {navItems.map((item) => (
+              {navItems.map((item, index) => (
                 <motion.button
                   key={item.id}
-                  whileHover={{ 
-                    scale: 1.1,
-                    y: -2,
-                    textShadow: "0px 0px 8px rgb(5 150 105)"
-                  }}
-                  whileTap={{ scale: 0.9 }}
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => scrollToSection(item.id)}
                   className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                     activeSection === item.id
@@ -272,201 +320,171 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
                       : 'text-gray-600 hover:text-emerald-600 hover:bg-emerald-50'
                   }`}
                 >
-                  {activeSection === item.id && (
-                    <motion.div 
-                      layoutId="activeSection"
-                      className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg"
-                      style={{ borderRadius: 8 }}
-                      initial={false}
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    />
-                  )}
-                  <span className="relative z-10">{item.label}</span>
+                  {item.label}
                 </motion.button>
               ))}
             </div>
 
-            {/* Enhanced CTA Button */}
-            <div className="hidden md:flex items-center space-x-4">
+            {/* Desktop CTA Button */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+              className="hidden md:flex items-center space-x-4"
+            >
               <motion.button 
-                onClick={downloadCV}
-                whileHover={{ 
-                  scale: 1.05,
-                  y: -2,
-                  boxShadow: "0 10px 25px -5px rgba(5, 150, 105, 0.4)"
-                }}
+                whileHover={{ scale: 1.05, boxShadow: "0 10px 25px -5px rgba(16, 185, 129, 0.4)" }}
                 whileTap={{ scale: 0.95 }}
-                className="relative flex items-center space-x-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2 rounded-lg overflow-hidden group"
+                onClick={downloadCV}
+                className="flex items-center space-x-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2 rounded-lg transition-all duration-300 hover:shadow-lg"
               >
-                <motion.div 
-                  className="absolute inset-0 bg-gradient-to-r from-teal-600 to-emerald-500"
-                  initial={false}
-                  whileHover={{ x: "100%" }}
-                  transition={{ duration: 0.5 }}
-                />
-                <Download size={16} className="relative z-10" />
-                <span className="relative z-10">Download CV</span>
+                <Download size={16} />
+                <span>Download CV</span>
               </motion.button>
-            </div>
+            </motion.div>
 
-            {/* Enhanced Mobile Menu Button */}
+            {/* Mobile Menu Button */}
             <motion.button
-              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-gray-600 hover:text-emerald-600 hover:bg-emerald-50"
+              onClick={toggleMenu}
+              className="md:hidden p-2 rounded-md text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors mobile-menu-button"
+              aria-label="Toggle navigation menu"
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </motion.button>
           </div>
-
-          {/* Enhanced Mobile Navigation */}
-          <AnimatePresence>
-            {isMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.4, ease: "easeInOut" }}
-                className="md:hidden overflow-hidden"
-              >
-                <div className="py-4 border-t border-emerald-100">
-                  <div className="flex flex-col space-y-2">
-                    {navItems.map((item) => (
-                      <motion.button
-                        key={item.id}
-                        initial={{ x: -50, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ delay: navItems.indexOf(item) * 0.1 }}
-                        whileHover={{ 
-                          x: 10,
-                          scale: 1.02,
-                          backgroundColor: "rgba(5, 150, 105, 0.1)"
-                        }}
-                        onClick={() => scrollToSection(item.id)}
-                        className={`text-left px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                          activeSection === item.id
-                            ? 'text-emerald-600 bg-emerald-50'
-                            : 'text-gray-600'
-                        }`}
-                      >
-                        {item.label}
-                      </motion.button>
-                    ))}
-                    <motion.button 
-                      onClick={downloadCV}
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.3 }}
-                      whileHover={{ scale: 1.05, y: -2 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="flex items-center space-x-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-3 rounded-lg mt-4"
-                    >
-                      <Download size={16} />
-                      <span>Download CV</span>
-                    </motion.button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
+
+        {/* Mobile Menu Content with Animation */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              variants={mobileMenuVariants}
+              initial="closed"
+              animate="open"
+              exit="closed"
+              className="md:hidden bg-white border-t border-emerald-100 rounded-b-lg shadow-lg overflow-hidden mobile-menu-container"
+            >
+              <div className="py-3">
+                {navItems.map((item, index) => (
+                  <motion.button
+                    key={item.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    whileHover={{ backgroundColor: "rgba(16, 185, 129, 0.1)" }}
+                    onClick={() => scrollToSection(item.id)}
+                    className={`w-full text-left px-6 py-3 text-base font-medium transition-all duration-300 ${
+                      activeSection === item.id
+                        ? 'text-emerald-600 bg-emerald-50 font-semibold'
+                        : 'text-gray-700 hover:text-emerald-600 hover:bg-emerald-50'
+                    }`}
+                  >
+                    {item.label}
+                  </motion.button>
+                ))}
+                
+                {/* Download CV Button for Mobile */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.7 }}
+                  className="px-6 py-3 border-t border-emerald-100 mt-2"
+                >
+                  <motion.button 
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={downloadCV}
+                    className="flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white w-full py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    <Download size={18} />
+                    <span>Download CV</span>
+                  </motion.button>
+                </motion.div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.nav>
 
-      {/* Enhanced Hero Section */}
+      {/* Hero Section with Enhanced Animations */}
       <section id="home" className="bg-gradient-to-r from-emerald-600 via-teal-700 to-cyan-800 text-white py-24 pt-32 relative overflow-hidden">
-        <motion.div 
-          initial={{ scale: 1.2, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 1.5 }}
-          className="absolute inset-0 opacity-10"
-        >
+        <div className="absolute inset-0 opacity-10">
           <motion.div 
-            variants={pulseGlow}
-            initial="initial"
-            animate="animate"
+            animate={{ 
+              x: [0, 100, 0],
+              y: [0, -50, 0],
+              rotate: [0, 180, 360]
+            }}
+            transition={{ 
+              duration: 20,
+              repeat: Infinity,
+              ease: "linear"
+            }}
             className="absolute top-20 left-10 w-32 h-32 bg-white rounded-full blur-3xl"
           ></motion.div>
           <motion.div 
-            variants={pulseGlow}
-            initial="initial"
-            animate="animate"
-            transition={{ delay: 1 }}
+            animate={{ 
+              x: [0, -100, 0],
+              y: [0, 50, 0],
+              rotate: [0, -180, -360]
+            }}
+            transition={{ 
+              duration: 25,
+              repeat: Infinity,
+              ease: "linear"
+            }}
             className="absolute bottom-20 right-10 w-48 h-48 bg-white rounded-full blur-3xl"
           ></motion.div>
-        </motion.div>
+        </div>
         
         <div className="container mx-auto px-6 relative z-10">
-          <div className="flex flex-col lg:flex-row items-center justify-between">
-            {/* Enhanced Profile Content */}
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="flex flex-col lg:flex-row items-center justify-between"
+          >
+            {/* Profile Content */}
             <motion.div 
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
+              variants={slideInLeft}
               className="lg:w-2/3 text-center lg:text-left mb-12 lg:mb-0"
             >
-              <motion.div variants={itemVariants} className="mb-8">
-               
-                
+              <div className="mb-8">
                 <motion.h1 
-                  variants={itemVariants} 
+                  variants={fadeInUp}
                   className="text-5xl md:text-6xl font-bold mb-6 leading-tight"
                 >
-                  <motion.span 
-                    initial={{ opacity: 0, x: -50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.8 }}
-                    className="block"
-                  >
-                    Saadhan
-                  </motion.span>
-                  <motion.span 
-                    initial={{ opacity: 0, x: 50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.8, delay: 0.2 }}
-                    className="block bg-gradient-to-r from-green-300 to-cyan-300 bg-clip-text text-transparent"
-                  >
+                  <span className="block">Saadhan</span>
+                  <span className="block bg-gradient-to-r from-green-300 to-cyan-300 bg-clip-text text-transparent">
                     Faizal
-                  </motion.span>
+                  </span>
                 </motion.h1>
                 
                 <motion.h2 
-                  variants={itemVariants} 
+                  variants={fadeInUp}
                   className="text-xl md:text-2xl font-light mb-8 text-emerald-100 leading-relaxed"
                 >
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    Environmental Technology Specialist | Climate Change Solutions Developer | 
-                  </motion.span>
-                  <motion.span 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.6 }}
-                    className="block mt-2"
-                  >
-                    Sustainability Innovation Leader
-                  </motion.span>
+                  Environmental Technology Specialist | Climate Change Solutions Developer | 
+                  <span className="block mt-2">Sustainability Innovation Leader</span>
                 </motion.h2>
                 
                 <motion.p 
-                  variants={itemVariants} 
+                  variants={fadeInUp}
                   className="text-lg text-emerald-100 mb-8 max-w-2xl leading-relaxed"
                 >
                   Environmental Technology graduate passionate about developing innovative solutions for climate change mitigation. 
                   Experienced in greenhouse gas monitoring systems, waste-to-resource innovations, and sustainable technology development.
                 </motion.p>
 
-                {/* Enhanced Social Links */}
-                <motion.div variants={itemVariants} className="flex flex-wrap justify-center lg:justify-start gap-4 mb-8">
+                {/* Social Links */}
+                <motion.div 
+                  variants={fadeInUp}
+                  className="flex flex-wrap justify-center lg:justify-start gap-4 mb-8"
+                >
                   <motion.a 
-                    whileHover={{ 
-                      scale: 1.05, 
-                      y: -2,
-                      boxShadow: "0 10px 25px -5px rgba(255, 255, 255, 0.3)"
-                    }}
+                    whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={{ scale: 0.95 }}
                     href="https://www.linkedin.com/in/saadhan-faizal-54a545343" 
                     target="_blank" 
@@ -477,11 +495,7 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
                     <span>LinkedIn</span>
                   </motion.a>
                   <motion.button 
-                    whileHover={{ 
-                      scale: 1.05, 
-                      y: -2,
-                      boxShadow: "0 10px 25px -5px rgba(255, 255, 255, 0.3)"
-                    }}
+                    whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={{ scale: 0.95 }}
                     className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 px-4 py-2 rounded-lg transition-all duration-300"
                   >
@@ -490,8 +504,11 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
                   </motion.button>
                 </motion.div>
 
-                {/* Enhanced Contact Info */}
-                <motion.div variants={itemVariants} className="flex flex-wrap justify-center lg:justify-start gap-6 text-emerald-100">
+                {/* Contact Info */}
+                <motion.div 
+                  variants={fadeInUp}
+                  className="flex flex-wrap justify-center lg:justify-start gap-6 text-emerald-100"
+                >
                   {[
                     { icon: Phone, text: "+94762119447" },
                     { icon: Mail, text: "saadhanfaizal@gmail.com" },
@@ -499,31 +516,26 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
                   ].map((item, index) => (
                     <motion.div 
                       key={index}
-                      whileHover={{ scale: 1.05, y: -2 }}
-                      className="flex items-center gap-2 cursor-pointer"
+                      whileHover={{ scale: 1.05 }}
+                      className="flex items-center gap-2"
                     >
                       <item.icon size={18} />
                       <span>{item.text}</span>
                     </motion.div>
                   ))}
                 </motion.div>
-              </motion.div>
+              </div>
             </motion.div>
 
-            {/* Enhanced Profile Image */}
+            {/* Profile Image */}
             <motion.div 
-              initial={{ opacity: 0, scale: 0.5, rotateY: 180 }}
-              animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-              transition={{ duration: 1, delay: 0.5 }}
+              variants={scaleUp}
               className="lg:w-1/3 flex justify-center"
             >
               <div className="relative">
                 <motion.div 
-                  whileHover={{ 
-                    scale: 1.05,
-                    rotateY: 10,
-                    transition: { duration: 0.5 }
-                  }}
+                  whileHover={{ scale: 1.05, rotateY: 10 }}
+                  transition={{ duration: 0.5 }}
                   className="w-96 h-96 bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-sm rounded-full flex items-center justify-center p-2 border-4 border-white/30 shadow-2xl overflow-hidden"
                 >
                   <motion.img
@@ -535,111 +547,89 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
                   />
                 </motion.div>
                 
-                {/* Enhanced Floating Elements */}
+                {/* Floating Elements */}
                 <motion.div 
                   variants={floatingAnimation}
-                  initial="initial"
                   animate="animate"
                   className="absolute -top-8 -right-8 w-20 h-20 bg-green-400 rounded-full flex items-center justify-center shadow-2xl"
                 >
                   <Wind size={32} className="text-white" />
                 </motion.div>
                 <motion.div 
-                  variants={floatingAnimation}
-                  initial="initial"
-                  animate="animate"
-                  transition={{ delay: 1 }}
+                  animate={{
+                    y: [0, -15, 0],
+                    x: [0, 15, 0],
+                    rotate: [0, 10, 0]
+                  }}
+                  transition={{
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: 1
+                  }}
                   className="absolute -bottom-6 -left-6 w-16 h-16 bg-cyan-400 rounded-full flex items-center justify-center shadow-2xl"
                 >
                   <Droplets size={24} className="text-white" />
                 </motion.div>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Enhanced About Section */}
-      <section id="about" className="py-20 bg-white">
+      {/* About Section */}
+      <motion.section 
+        initial={{ opacity: 0, y: 50 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+        id="about" 
+        className="py-20 bg-white"
+      >
         <div className="container mx-auto px-6">
           <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={fadeInUp}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <motion.h3 
-              whileHover={{ scale: 1.05 }}
-              className="text-4xl font-bold text-gray-800 mb-4 cursor-default"
-            >
-              Professional Summary
-            </motion.h3>
-            <motion.div 
-              initial={{ width: 0 }}
-              whileInView={{ width: 96 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1 }}
-              className="h-1 bg-gradient-to-r from-emerald-500 to-teal-600 mx-auto"
-            ></motion.div>
+            <h3 className="text-4xl font-bold text-gray-800 mb-4">Professional Summary</h3>
+            <div className="h-1 bg-gradient-to-r from-emerald-500 to-teal-600 mx-auto w-24"></div>
           </motion.div>
           
           <div className="max-w-5xl mx-auto">
             <motion.div 
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={scaleUp}
-              whileHover={{ 
-                y: -10,
-                boxShadow: "0 25px 50px -12px rgba(5, 150, 105, 0.25)"
-              }}
+              whileHover={{ y: -5, boxShadow: "0 20px 40px rgba(16, 185, 129, 0.1)" }}
               className="bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-10 rounded-2xl shadow-xl border border-emerald-100 relative overflow-hidden"
             >
-              <motion.div 
-                initial={{ rotate: 45, scale: 2, opacity: 0.1 }}
-                whileInView={{ rotate: 0, scale: 1, opacity: 0.05 }}
-                viewport={{ once: true }}
-                transition={{ duration: 1 }}
-                className="absolute -right-20 -top-20 w-40 h-40 bg-emerald-500 rounded-full"
-              ></motion.div>
+              <div className="absolute -right-20 -top-20 w-40 h-40 bg-emerald-500 rounded-full opacity-5"></div>
               
-              <motion.div 
-                variants={containerVariants}
-                className="grid md:grid-cols-3 gap-8 mb-8 relative z-10"
-              >
+              <div className="grid md:grid-cols-3 gap-8 mb-8 relative z-10">
                 {[
                   { icon: Award, value: "3.2 GPA", label: "Environmental Technology" },
                   { icon: Users, value: "5000+", label: "Community Members" },
                   { icon: Code, value: "2+", label: "Major Projects" }
                 ].map((stat, index) => (
                   <motion.div 
-                    key={index} 
-                    variants={itemVariants}
-                    whileHover={{ 
-                      scale: 1.05,
-                      y: -5,
-                      transition: { type: "spring", stiffness: 300 }
-                    }}
+                    key={index}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                    whileHover={{ scale: 1.05, y: -5 }}
                     className="text-center p-6 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/80 transition-all duration-300"
                   >
-                    <motion.div 
-                      whileHover={{ rotate: 360, scale: 1.1 }}
-                      transition={{ duration: 0.5 }}
-                      className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-4"
-                    >
+                    <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-4">
                       <stat.icon size={32} className="text-white" />
-                    </motion.div>
+                    </div>
                     <h4 className="font-bold text-gray-800 mb-2 text-xl">{stat.value}</h4>
                     <p className="text-gray-600">{stat.label}</p>
                   </motion.div>
                 ))}
-              </motion.div>
+              </div>
 
-              <motion.div 
-                variants={containerVariants}
-                className="space-y-6 text-lg leading-relaxed text-gray-700 relative z-10"
-              >
+              <div className="space-y-6 text-lg leading-relaxed text-gray-700 relative z-10">
                 {[
                   "BBST (Honours) Environmental Technology Graduate from the University of Colombo with specialized expertise in Climate Change Mitigation and Sustainability Solutions.",
                   "My technical expertise spans Greenhouse Gas Analysis, Waste-to-Resource Innovation, and Environmental Data Analytics.",
@@ -647,30 +637,34 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
                 ].map((text, index) => (
                   <motion.p 
                     key={index}
-                    variants={itemVariants}
-                    whileHover={{ x: 10 }}
-                    className="hover:text-emerald-700 transition-colors duration-300 cursor-default"
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.2 }}
+                    viewport={{ once: true }}
+                    whileHover={{ x: 5 }}
+                    className="hover:text-emerald-700 transition-colors duration-300"
                   >
                     {index === 0 ? <strong>{text}</strong> : text}
                   </motion.p>
                 ))}
-              </motion.div>
+              </div>
               
               <motion.div 
-                variants={containerVariants}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.6 }}
+                viewport={{ once: true }}
                 className="mt-8 flex flex-wrap gap-3 relative z-10"
               >
                 {["Environmental Technology", "Climate Change", "Sustainability", "GHG Monitoring", "Circular Economy", "Environmental Data Science", "Green Innovation"].map((keyword, index) => (
                   <motion.span 
                     key={keyword}
-                    variants={itemVariants}
-                    whileHover={{ 
-                      scale: 1.1, 
-                      y: -2,
-                      backgroundColor: "rgba(5, 150, 105, 0.2)",
-                      color: "rgb(4, 120, 87)"
-                    }}
-                    className="px-4 py-2 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 rounded-full text-sm font-medium border border-emerald-200 cursor-pointer transition-all duration-300"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                    whileHover={{ scale: 1.1, y: -2 }}
+                    className="px-4 py-2 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 rounded-full text-sm font-medium border border-emerald-200"
                   >
                     {keyword}
                   </motion.span>
@@ -679,16 +673,23 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
             </motion.div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      {/* Enhanced Projects Section */}
-      <section id="projects" className="py-20 bg-slate-50">
+      {/* Projects Section */}
+      <motion.section 
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+        id="projects" 
+        className="py-20 bg-slate-50"
+      >
         <div className="container mx-auto px-6">
           <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={fadeInUp}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
             className="text-center mb-16"
           >
             <h3 className="text-4xl font-bold text-gray-800 mb-4">Key Projects</h3>
@@ -702,43 +703,28 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
             {projects.map((project, index) => (
               <motion.div
                 key={index}
-                initial="hidden"
-                whileInView="visible"
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.2 }}
                 viewport={{ once: true }}
-                variants={index % 2 === 0 ? slideInLeft : slideInRight}
-                whileHover={{ 
-                  y: -15,
-                  scale: 1.02,
-                  transition: { type: "spring", stiffness: 300 }
-                }}
-                onHoverStart={() => setIsHovered(index)}
-                onHoverEnd={() => setIsHovered(null)}
-                className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100 relative"
+                whileHover={{ y: -10, scale: 1.02 }}
+                className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100"
               >
                 <div className="relative overflow-hidden">
-                  <motion.div 
-                    animate={isHovered === index ? { scale: 1.1 } : { scale: 1 }}
-                    transition={{ duration: 0.5 }}
-                    className="w-full h-64 overflow-hidden"
-                  >
-                    <img 
+                  <div className="w-full h-64 overflow-hidden">
+                    <motion.img 
+                      whileHover={{ scale: 1.1 }}
+                      transition={{ duration: 0.5 }}
                       src={project.image} 
                       alt={project.title}
                       className="w-full h-full object-cover"
                     />
-                  </motion.div>
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={isHovered === index ? { opacity: 1 } : { opacity: 0 }}
-                    className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"
-                  />
-                  <motion.div 
-                    initial={{ y: 100, opacity: 0 }}
-                    animate={isHovered === index ? { y: 0, opacity: 1 } : { y: 100, opacity: 0 }}
-                    className="absolute bottom-4 left-4 right-4"
-                  >
-                    <h4 className="text-2xl font-bold text-white mb-2">{project.title}</h4>
-                  </motion.div>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <h4 className="text-2xl font-bold text-white mb-2">{project.title}</h4>
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="p-8">
@@ -748,11 +734,15 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
                   <p className="text-gray-600 mb-6 leading-relaxed">{project.description}</p>
                   
                   <div className="flex flex-wrap gap-2 mb-6">
-                    {project.tags.map((tag) => (
+                    {project.tags.map((tag, tagIndex) => (
                       <motion.span 
-                        key={tag} 
-                        whileHover={{ scale: 1.05 }}
-                        className="px-3 py-1 bg-gradient-to-r from-teal-100 to-emerald-100 text-teal-800 rounded-full text-sm font-medium cursor-default"
+                        key={tag}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.3, delay: tagIndex * 0.1 }}
+                        viewport={{ once: true }}
+                        whileHover={{ scale: 1.1 }}
+                        className="px-3 py-1 bg-gradient-to-r from-teal-100 to-emerald-100 text-teal-800 rounded-full text-sm font-medium"
                       >
                         {tag}
                       </motion.span>
@@ -772,60 +762,59 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      {/* Enhanced Skills Section */}
-      <section id="skills" className="py-20 bg-white">
+      {/* Skills Section */}
+      <motion.section 
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+        id="skills" 
+        className="py-20 bg-white"
+      >
         <div className="container mx-auto px-6">
           <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={fadeInUp}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
             className="text-center mb-16"
           >
             <h3 className="text-4xl font-bold text-gray-800 mb-4">Technical Expertise</h3>
             <div className="w-24 h-1 bg-gradient-to-r from-emerald-500 to-teal-600 mx-auto"></div>
           </motion.div>
           
-          <motion.div 
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="grid md:grid-cols-3 lg:grid-cols-5 gap-8 max-w-5xl mx-auto mb-16"
-          >
+          <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-8 max-w-5xl mx-auto mb-16">
             {skills.map((skill, index) => {
               const IconComponent = skill.icon;
               return (
                 <motion.div
                   key={index}
-                  variants={itemVariants}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  viewport={{ once: true }}
                   whileHover={{ 
-                    scale: 1.15, 
+                    scale: 1.1, 
                     y: -10,
-                    rotateZ: 5,
-                    boxShadow: "0 20px 25px -5px rgba(5, 150, 105, 0.3)"
+                    rotateY: 180,
+                    transition: { duration: 0.3 }
                   }}
                   className="group text-center p-8 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 transition-all duration-300 hover:shadow-lg border border-transparent hover:border-emerald-200"
                 >
-                  <motion.div
-                    whileHover={{ rotate: 360, scale: 1.2 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <IconComponent size={56} className="text-emerald-600 mx-auto mb-4" />
-                  </motion.div>
+                  <IconComponent size={56} className="text-emerald-600 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300" />
                   <p className="font-semibold text-gray-800">{skill.name}</p>
                 </motion.div>
               );
             })}
-          </motion.div>
+          </div>
           
           <motion.div 
-            initial="hidden"
-            whileInView="visible"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
             viewport={{ once: true }}
-            variants={fadeInUp}
             className="text-center"
           >
             <h4 className="text-2xl font-semibold text-gray-800 mb-8">Additional Skills</h4>
@@ -833,17 +822,12 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
               {["Leadership", "Teamwork", "Content Writing", "Critical Thinking", "English & Tamil Proficiency"].map((skill, index) => (
                 <motion.span 
                   key={skill}
-                  initial={{ opacity: 0, scale: 0, rotate: 180 }}
-                  whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  transition={{ delay: index * 0.1, type: "spring" }}
-                  whileHover={{ 
-                    scale: 1.2, 
-                    y: -5,
-                    backgroundColor: "rgba(5, 150, 105, 0.2)",
-                    color: "rgb(4, 120, 87)"
-                  }}
-                  className="px-6 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-full font-medium cursor-pointer transition-all duration-300"
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  className="px-6 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-full font-medium"
                 >
                   {skill}
                 </motion.span>
@@ -851,16 +835,23 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
             </div>
           </motion.div>
         </div>
-      </section>
+      </motion.section>
 
-      {/* Enhanced Leadership Section */}
-      <section id="leadership" className="py-20 bg-slate-50">
+      {/* Leadership Section */}
+      <motion.section 
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+        id="leadership" 
+        className="py-20 bg-slate-50"
+      >
         <div className="container mx-auto px-6">
           <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={fadeInUp}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
             className="text-center mb-16"
           >
             <h3 className="text-4xl font-bold text-gray-800 mb-4">Leadership Experience</h3>
@@ -871,44 +862,59 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
             {leadership.map((item, index) => (
               <motion.div
                 key={index}
-                initial="hidden"
-                whileInView="visible"
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.2 }}
                 viewport={{ once: true }}
-                variants={itemVariants}
                 whileHover={{ 
                   y: -10,
-                  scale: 1.03,
-                  boxShadow: "0 25px 50px -12px rgba(5, 150, 105, 0.25)"
+                  boxShadow: "0 20px 40px rgba(0,0,0,0.1)"
                 }}
                 className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100"
               >
                 <div className="p-8">
                   <motion.div 
-                    whileHover={{ scale: 1.1 }}
+                    whileHover={{ scale: 1.1, rotate: 5 }}
                     className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center mb-6"
                   >
                     <Users size={32} className="text-white" />
                   </motion.div>
                   
                   <h4 className="text-2xl font-bold text-gray-800 mb-2">{item.role}</h4>
-                  <p className="text-lg font-semibold text-emerald-600 mb-2">{item.organization}</p>
-                  <p className="text-sm font-medium text-gray-500 mb-4">{item.impact}</p>
-                  <p className="text-gray-600 leading-relaxed">{item.description}</p>
+                  <p className="text-lg text-emerald-600 font-semibold mb-4">{item.organization}</p>
+                  <p className="text-gray-600 mb-4 leading-relaxed">{item.description}</p>
+                  
+                  <motion.div 
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                    viewport={{ once: true }}
+                    className="inline-block px-4 py-2 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 rounded-full text-sm font-medium"
+                  >
+                    {item.impact}
+                  </motion.div>
                 </div>
               </motion.div>
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      {/* Enhanced Education Section */}
-      <section id="education" className="py-20 bg-white">
+      {/* Education Section */}
+      <motion.section 
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+        id="education" 
+        className="py-20 bg-white"
+      >
         <div className="container mx-auto px-6">
           <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={fadeInUp}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
             className="text-center mb-16"
           >
             <h3 className="text-4xl font-bold text-gray-800 mb-4">Education</h3>
@@ -916,238 +922,245 @@ const [isHovered, setIsHovered] = useState<number | null>(null);
           </motion.div>
           
           <motion.div 
-            initial="hidden"
-            whileInView="visible"
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            variants={scaleUp}
-            className="max-w-4xl mx-auto bg-gradient-to-br from-emerald-50 via-white to-teal-50 rounded-2xl shadow-xl p-10 border border-emerald-100 relative overflow-hidden"
+            className="max-w-4xl mx-auto"
           >
-            <motion.div 
-              initial={{ rotate: 45, scale: 2, opacity: 0.1 }}
-              whileInView={{ rotate: 0, scale: 1, opacity: 0.05 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1 }}
-              className="absolute -left-20 -bottom-20 w-40 h-40 bg-teal-500 rounded-full"
-            ></motion.div>
-            
-            <div className="relative z-10">
-              <motion.div 
-                whileHover={{ scale: 1.02, x: 10 }}
-                className="mb-8 p-6 bg-white/80 backdrop-blur-sm rounded-xl hover:bg-white transition-all duration-300"
-              >
-                <div className="flex items-start space-x-4">
-                  <motion.div 
-                    whileHover={{ rotate: 360, scale: 1.1 }}
-                    className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center flex-shrink-0"
-                  >
-                    <GraduationCap size={32} className="text-white" />
-                  </motion.div>
-                  <div>
-                    <h4 className="text-2xl font-bold text-gray-800 mb-2">University of Colombo</h4>
-                    <p className="text-lg font-semibold text-emerald-600 mb-1">BBST (Honours) Environmental Technology</p>
-                    <p className="text-gray-600 mb-2">2020 - 2024 | GPA: 3.2</p>
-                    <p className="text-gray-700 leading-relaxed">
-                      Specialized in Environmental Technology with focus on climate change mitigation, 
-                      sustainability solutions, and innovative environmental monitoring systems.
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
+            <div className="bg-gradient-to-br from-emerald-50 via-white to-teal-50 rounded-2xl shadow-xl p-10 border border-emerald-100 relative overflow-hidden">
+              <div className="absolute -left-20 -top-20 w-40 h-40 bg-emerald-500 rounded-full opacity-5"></div>
+              <div className="absolute -right-20 -bottom-20 w-40 h-40 bg-teal-500 rounded-full opacity-5"></div>
               
-              <motion.div 
-                whileHover={{ scale: 1.02, x: 10 }}
-                className="p-6 bg-white/80 backdrop-blur-sm rounded-xl hover:bg-white transition-all duration-300"
-              >
-                <div className="flex items-start space-x-4">
-                  <motion.div 
-                    whileHover={{ rotate: 360, scale: 1.1 }}
-                    className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center flex-shrink-0"
-                  >
-                    <Award size={32} className="text-white" />
-                  </motion.div>
-                  <div>
-                    <h4 className="text-2xl font-bold text-gray-800 mb-2">Professional Development</h4>
-                    <p className="text-lg font-semibold text-emerald-600 mb-1">Continuous Learning & Skill Enhancement</p>
-                    <p className="text-gray-700 leading-relaxed">
-                      Actively engaged in professional development through workshops, online courses, 
-                      and practical projects focused on environmental technology and sustainability innovation.
-                    </p>
+              <div className="flex items-start space-x-6 relative z-10">
+                <motion.div 
+                  whileHover={{ scale: 1.1, rotate: 360 }}
+                  transition={{ duration: 0.5 }}
+                  className="w-20 h-20 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center flex-shrink-0"
+                >
+                  <GraduationCap size={32} className="text-white" />
+                </motion.div>
+                
+                <div>
+                  <h4 className="text-3xl font-bold text-gray-800 mb-2">BBST (Honours) Environmental Technology</h4>
+                  <p className="text-xl text-emerald-600 font-semibold mb-4">University of Colombo</p>
+                  
+                  <div className="grid md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                      <p className="text-gray-600 mb-2"><strong>Duration:</strong> 2020 - 2023</p>
+                      <p className="text-gray-600 mb-2"><strong>GPA:</strong> 3.2/4.0</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600 mb-2"><strong>Specialization:</strong> Climate Change & Sustainability</p>
+                      <p className="text-gray-600"><strong>Status:</strong> Completed</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <h5 className="font-semibold text-gray-800">Key Achievements:</h5>
+                    <ul className="list-disc list-inside space-y-2 text-gray-600">
+                      <li>Developed innovative GHG monitoring solutions as part of final year project</li>
+                      <li>Participated in sustainability-focused research and community projects</li>
+                      <li>Gained comprehensive knowledge in environmental policy and technology</li>
+                    </ul>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </motion.div>
         </div>
-      </section>
+      </motion.section>
 
-      {/* Enhanced Contact Section */}
-      <section id="contact" className="py-20 bg-gradient-to-br from-emerald-600 via-teal-700 to-cyan-800 text-white">
+      {/* Contact Section */}
+      <motion.section 
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+        id="contact" 
+        className="py-20 bg-gradient-to-br from-emerald-600 via-teal-700 to-cyan-800 text-white"
+      >
         <div className="container mx-auto px-6">
           <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={fadeInUp}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h3 className="text-4xl font-bold mb-4">Get In Touch</h3>
-            <div className="w-24 h-1 bg-white mx-auto mb-6"></div>
-            <p className="text-xl opacity-90 max-w-3xl mx-auto">
-              Ready to collaborate on environmental solutions? Let's connect and create sustainable impact together.
-            </p>
+            <h3 className="text-4xl font-bold mb-4">Let's Connect</h3>
+            <div className="w-24 h-1 bg-gradient-to-r from-green-300 to-cyan-300 mx-auto"></div>
           </motion.div>
           
-          <div className="grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
-            <motion.div 
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={slideInLeft}
-              className="space-y-8"
-            >
-              <h4 className="text-2xl font-bold mb-6">Contact Information</h4>
-              
-              {[
-                { icon: Phone, label: "Phone", value: "+94762119447" },
-                { icon: Mail, label: "Email", value: "saadhanfaizal@gmail.com" },
-                { icon: MapPin, label: "Location", value: "Puttalam, Sri Lanka" }
-              ].map((item, index) => (
-                <motion.div 
-                  key={index}
-                  whileHover={{ x: 10, scale: 1.02 }}
-                  className="flex items-center space-x-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-all duration-300 cursor-pointer"
-                >
-                  <motion.div 
-                    whileHover={{ rotate: 360, scale: 1.1 }}
-                    className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center"
-                  >
-                    <item.icon size={24} />
-                  </motion.div>
-                  <div>
-                    <p className="font-semibold">{item.label}</p>
-                    <p className="opacity-90">{item.value}</p>
-                  </div>
-                </motion.div>
-              ))}
-              
-              <motion.div 
-                initial="hidden"
-                whileInView="visible"
+          <div className="max-w-4xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-12">
+              {/* Contact Information */}
+              <motion.div
+                initial={{ opacity: 0, x: -50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6 }}
                 viewport={{ once: true }}
-                variants={containerVariants}
-                className="flex space-x-4 pt-4"
+                className="space-y-8"
               >
-                {[
-                  { icon: Linkedin, href: "https://www.linkedin.com/in/saadhan-faizal-54a545343" },
-                  { icon: Github, href: "#" },
-                  { icon: MessageSquare, href: "#" }
-                ].map((social, index) => (
-                  <motion.a 
-                    key={index}
-                    variants={itemVariants}
-                    whileHover={{ 
-                      scale: 1.2, 
-                      y: -5,
-                      backgroundColor: "rgba(255, 255, 255, 0.3)"
-                    }}
-                    href={social.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/20 transition-all duration-300"
-                  >
-                    <social.icon size={20} />
-                  </motion.a>
-                ))}
+                <div>
+                  <h4 className="text-2xl font-bold mb-6">Get in Touch</h4>
+                  <p className="text-emerald-100 leading-relaxed">
+                    Interested in collaborating on environmental technology projects or discussing sustainability solutions? 
+                    I'm always open to new opportunities and conversations about creating positive environmental impact.
+                  </p>
+                </div>
+                
+                <div className="space-y-4">
+                  {[
+                    { icon: Mail, label: "Email", value: "saadhanfaizal@gmail.com", href: "mailto:saadhanfaizal@gmail.com" },
+                    { icon: Phone, label: "Phone", value: "+94762119447", href: "tel:+94762119447" },
+                    { icon: MapPin, label: "Location", value: "Puttalam, Sri Lanka", href: "#" }
+                  ].map((item, index) => (
+                    <motion.a 
+                      key={index}
+                      href={item.href}
+                      whileHover={{ x: 10, scale: 1.02 }}
+                      className="flex items-center space-x-4 p-4 rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 group"
+                    >
+                      <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-cyan-400 rounded-full flex items-center justify-center">
+                        <item.icon size={24} className="text-white" />
+                      </div>
+                      <div>
+                        <p className="font-semibold">{item.label}</p>
+                        <p className="text-emerald-100">{item.value}</p>
+                      </div>
+                    </motion.a>
+                  ))}
+                </div>
+                
+                <div className="flex space-x-4">
+                  {[
+                    { icon: Linkedin, href: "https://www.linkedin.com/in/saadhan-faizal-54a545343", label: "LinkedIn" },
+                    { icon: Github, href: "#", label: "GitHub" },
+                    { icon: MessageSquare, href: "#", label: "Messenger" }
+                  ].map((social, index) => (
+                    <motion.a 
+                      key={index}
+                      href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      whileHover={{ scale: 1.1, y: -5 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/20 transition-all duration-300"
+                    >
+                      <social.icon size={24} />
+                    </motion.a>
+                  ))}
+                </div>
               </motion.div>
+              
+              {/* Contact Form */}
+              <motion.div
+                initial={{ opacity: 0, x: 50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6 }}
+                viewport={{ once: true }}
+                className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20"
+              >
+                <h4 className="text-2xl font-bold mb-6">Send a Message</h4>
+                <form className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Name</label>
+                    <input 
+                      type="text" 
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:border-green-300 transition-colors duration-300"
+                      placeholder="Your Name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Email</label>
+                    <input 
+                      type="email" 
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:border-green-300 transition-colors duration-300"
+                      placeholder="your.email@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Message</label>
+                    <textarea 
+                      rows={5}
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:border-green-300 transition-colors duration-300"
+                      placeholder="Your message here..."
+                    ></textarea>
+                  </div>
+                  <motion.button 
+                    whileHover={{ scale: 1.05, boxShadow: "0 10px 25px -5px rgba(255, 255, 255, 0.3)" }}
+                    whileTap={{ scale: 0.95 }}
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-green-400 to-cyan-400 text-white py-3 rounded-lg font-semibold transition-all duration-300"
+                  >
+                    Send Message
+                  </motion.button>
+                </form>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
+      {/* Footer */}
+      <motion.footer 
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+        className="bg-gray-900 text-white py-12"
+      >
+        <div className="container mx-auto px-6">
+          <div className="text-center">
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="flex items-center justify-center space-x-3 mb-6"
+            >
+              <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+                <Leaf size={24} className="text-white" />
+              </div>
+              <span className="text-xl font-bold">Saadhan Faizal</span>
             </motion.div>
             
-            <motion.div 
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={slideInRight}
-              className="bg-white/10 backdrop-blur-sm rounded-2xl p-8"
-            >
-              <h4 className="text-2xl font-bold mb-6">Send a Message</h4>
-              <form className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <motion.input 
-                    whileFocus={{ scale: 1.02, x: 5 }}
-                    type="text" 
-                    placeholder="Your Name" 
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:border-white/40 transition-all duration-300"
-                  />
-                  <motion.input 
-                    whileFocus={{ scale: 1.02, x: 5 }}
-                    type="email" 
-                    placeholder="Your Email" 
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:border-white/40 transition-all duration-300"
-                  />
-                </div>
-                <motion.input 
-                  whileFocus={{ scale: 1.02, x: 5 }}
-                  type="text" 
-                  placeholder="Subject" 
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:border-white/40 transition-all duration-300"
-                />
-                <motion.textarea 
-                  whileFocus={{ scale: 1.02, x: 5 }}
-                  rows={5} 
-                  placeholder="Your Message" 
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:border-white/40 transition-all duration-300 resize-none"
-                ></motion.textarea>
-                <motion.button 
-                  whileHover={{ 
-                    scale: 1.05, 
-                    y: -2,
-                    boxShadow: "0 10px 25px -5px rgba(255, 255, 255, 0.3)"
-                  }}
-                  whileTap={{ scale: 0.95 }}
-                  type="submit"
-                  className="w-full bg-white text-emerald-600 font-semibold py-3 rounded-lg hover:bg-gray-100 transition-all duration-300"
+            <p className="text-gray-400 mb-6 max-w-2xl mx-auto leading-relaxed">
+              Environmental Technology Specialist dedicated to creating sustainable solutions for a better tomorrow. 
+              Let's work together towards a greener, more sustainable future.
+            </p>
+            
+            <div className="flex justify-center space-x-6 mb-6">
+              {[
+                { icon: Linkedin, href: "https://www.linkedin.com/in/saadhan-faizal-54a545343", label: "LinkedIn" },
+                { icon: Mail, href: "mailto:saadhanfaizal@gmail.com", label: "Email" },
+                { icon: Phone, href: "tel:+94762119447", label: "Phone" }
+              ].map((social, index) => (
+                <motion.a 
+                  key={index}
+                  href={social.href}
+                  whileHover={{ scale: 1.2, y: -2 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-emerald-600 transition-colors duration-300"
                 >
-                  Send Message
-                </motion.button>
-              </form>
+                  <social.icon size={20} />
+                </motion.a>
+              ))}
+            </div>
+            
+            <motion.div 
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              viewport={{ once: true }}
+              className="border-t border-gray-800 pt-6"
+            >
+              <p className="text-gray-400">
+                &copy; 2024 Saadhan Faizal. All rights reserved. 
+                <span className="block mt-2 text-emerald-400">Building a Sustainable Future</span>
+              </p>
             </motion.div>
           </div>
         </div>
-      </section>
-
-      {/* Enhanced Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="container mx-auto px-6 text-center">
-          <motion.div 
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mb-8"
-          >
-            <motion.div 
-              whileHover={{ scale: 1.1, rotateY: 180 }}
-              className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-4"
-            >
-              <Leaf size={32} />
-            </motion.div>
-            <h4 className="text-2xl font-bold mb-4">Saadhan Faizal</h4>
-            <p className="text-gray-400 max-w-md mx-auto">
-              Environmental Technology Specialist dedicated to creating sustainable solutions for a better future.
-            </p>
-          </motion.div>
-          
-          <motion.div 
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="border-t border-gray-800 pt-8"
-          >
-            <p className="text-gray-400">
-              © 2024 Saadhan Faizal. All rights reserved. Made with ❤️ for a sustainable future.
-            </p>
-          </motion.div>
-        </div>
-      </footer>
+      </motion.footer>
     </div>
   );
 }
